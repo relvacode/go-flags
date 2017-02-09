@@ -206,7 +206,7 @@ func (p *Parser) ParseArgs(args []string) ([]string, error) {
 		return nil, p.internalError
 	}
 
-	p.eachOption(func(c *Command, g *Group, option *Option) {
+	p.EachOption(func(c *Command, g *Group, option *Option) {
 		option.isSet = false
 		option.isSetDefault = false
 		option.updateDefaultLiteral()
@@ -296,7 +296,7 @@ func (p *Parser) ParseArgs(args []string) ([]string, error) {
 	}
 
 	if s.err == nil {
-		p.eachOption(func(c *Command, g *Group, option *Option) {
+		p.EachOption(func(c *Command, g *Group, option *Option) {
 			if option.preventDefault {
 				return
 			}

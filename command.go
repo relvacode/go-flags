@@ -264,7 +264,7 @@ func (c *Command) scan() error {
 	return c.scanType(c.scanSubcommandHandler(c.Group))
 }
 
-func (c *Command) eachOption(f func(*Command, *Group, *Option)) {
+func (c *Command) EachOption(f func(*Command, *Group, *Option)) {
 	c.eachCommand(func(c *Command) {
 		c.eachGroup(func(g *Group) {
 			for _, option := range g.options {
