@@ -29,6 +29,9 @@ type Parser struct {
 	// NamespaceDelimiter separates group namespaces and option long names
 	NamespaceDelimiter string
 
+	// EnvNamespaceDelimiter separates group env namespaces and env keys
+	EnvNamespaceDelimiter string
+
 	// UnknownOptionsHandler is a function which gets called when the parser
 	// encounters an unknown option. The function receives the unknown option
 	// name, a SplitArgument which specifies its value if set with an argument
@@ -87,7 +90,7 @@ const (
 	// -h and --help options. When either -h or --help is specified on the
 	// command line, the parser will return the special error of type
 	// ErrHelp. When PrintErrors is also specified, then the help message
-	// will also be automatically printed to os.Stderr.
+	// will also be automatically printed to os.Stdout.
 	HelpFlag = 1 << iota
 
 	// PassDoubleDash passes all arguments after a double dash, --, as
@@ -100,7 +103,8 @@ const (
 	IgnoreUnknown
 
 	// PrintErrors prints any errors which occurred during parsing to
-	// os.Stderr.
+	// os.Stderr. In the special case of ErrHelp, the message will be printed
+	// to os.Stdout.
 	PrintErrors
 
 	// PassAfterNonOption passes all arguments after the first non option
@@ -169,9 +173,10 @@ func NewParser(data interface{}, options Options) *Parser {
 // be added to this parser by using AddGroup and AddCommand.
 func NewNamedParser(appname string, options Options) *Parser {
 	p := &Parser{
-		Command:            newCommand(appname, "", "", nil),
-		Options:            options,
-		NamespaceDelimiter: ".",
+		Command:               newCommand(appname, "", "", nil),
+		Options:               options,
+		NamespaceDelimiter:    ".",
+		EnvNamespaceDelimiter: "_",
 	}
 
 	p.Command.parent = p
@@ -483,7 +488,7 @@ func (p *parseState) estimateCommand() error {
 			msg = fmt.Sprintf("%s. You should use the %s command",
 				msg,
 				cmdnames[0])
-		} else {
+		} else if len(cmdnames) > 1 {
 			msg = fmt.Sprintf("%s. Please specify one command of: %s or %s",
 				msg,
 				strings.Join(cmdnames[:len(cmdnames)-1], ", "),
@@ -494,7 +499,7 @@ func (p *parseState) estimateCommand() error {
 
 		if len(cmdnames) == 1 {
 			msg = fmt.Sprintf("Please specify the %s command", cmdnames[0])
-		} else {
+		} else if len(cmdnames) > 1 {
 			msg = fmt.Sprintf("Please specify one command of: %s or %s",
 				strings.Join(cmdnames[:len(cmdnames)-1], ", "),
 				cmdnames[len(cmdnames)-1])
@@ -681,7 +686,13 @@ func (p *Parser) showBuiltinHelp() error {
 
 func (p *Parser) printError(err error) error {
 	if err != nil && (p.Options&PrintErrors) != None {
-		fmt.Fprintln(os.Stderr, err)
+		flagsErr, ok := err.(*Error)
+
+		if ok && flagsErr.Type == ErrHelp {
+			fmt.Fprintln(os.Stdout, err)
+		} else {
+			fmt.Fprintln(os.Stderr, err)
+		}
 	}
 
 	return err
