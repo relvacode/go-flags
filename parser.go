@@ -112,6 +112,11 @@ const (
 	// POSIX processing.
 	PassAfterNonOption
 
+	// DisableUnQuote tells the parser to never unquote an argument unless the argument
+	// explicity sets `unquote` to true.
+	// The default behaviour is to always unquote unless the argument set `unquote` to false.
+	DisableUnQuote
+
 	// Default is a convenient default set of options which should cover
 	// most of the uses of the flags package.
 	Default = HelpFlag | PrintErrors | PassDoubleDash
@@ -531,7 +536,7 @@ func (p *Parser) parseOption(s *parseState, name string, option *Option, canarg 
 			}
 		}
 
-		if option.tag.Get("unquote") != "false" {
+		if (p.Options&DisableUnQuote == None && option.tag.Get("unquote") != "false") || option.tag.Get("unquote") == "true" {
 			arg, err = unquoteIfPossible(arg)
 		}
 
